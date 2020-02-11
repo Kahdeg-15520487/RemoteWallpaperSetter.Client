@@ -35,6 +35,8 @@
         <Button x:Name="clearLogButton" Content="Clear Log" HorizontalAlignment="Left" Margin="155,10,0,0" VerticalAlignment="Top" Width="100" Click="clearLogButton_Click"/>
         <ListBox x:Name="serverSelectListBox" HorizontalAlignment="Left" Height="100" Margin="10,35,0,0" VerticalAlignment="Top" Width="245" SelectionChanged="serverSelectListBox_SelectionChanged" SelectionMode="Single"/>
         <TextBox x:Name="logTextBox" HorizontalAlignment="Left" Height="125" Margin="260,10,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="231" IsReadOnly="True"/>
+        <TextBox x:Name="ipTextbox" HorizontalAlignment="Left" Height="22" Margin="10,135,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="152"/>
+        <Button x:Name="setButton" Content="Set" HorizontalAlignment="Left" Margin="162,136,0,0" VerticalAlignment="Top" Width="93" Click="setButton_Click"/>
 
     </Grid>
 </Window>

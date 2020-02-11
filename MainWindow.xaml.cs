@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -99,11 +100,11 @@ namespace RosenHCMC.VPN.Client
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                logTextBoxAdd(ex.Message);
             }
         }
 
-        private void discoveryButton_Click(object sender, RoutedEventArgs e)
+        private async Task<string[]> DiscoveryServer()
         {
             UdpClient Client = new UdpClient();
             byte[] RequestData = Encoding.ASCII.GetBytes("SomeRequestData");
@@ -112,13 +113,31 @@ namespace RosenHCMC.VPN.Client
             Client.EnableBroadcast = true;
             Client.Send(RequestData, RequestData.Length, new IPEndPoint(IPAddress.Broadcast, 9099));
 
-            byte[] ServerResponseData = Client.Receive(ref ServerEp);
+            byte[] ServerResponseData = await Task.Run(() => Client.Receive(ref ServerEp));
             string ServerResponse = Encoding.ASCII.GetString(ServerResponseData);
             Console.WriteLine("Recived {0} from {1}", ServerResponse, ServerEp.Address.ToString());
             string[] ips = JsonConvert.DeserializeObject<string[]>(ServerResponse);
-            serverSelectListBox.ItemsSource = ips;
 
             Client.Close();
+
+            return ips;
+        }
+
+        private async void discoveryButton_Click(object sender, RoutedEventArgs e)
+        {
+            int timeout = 5000;
+            Task<string[]> task = DiscoveryServer();
+            if (await Task.WhenAny(task, Task.Delay(timeout)) == task)
+            {
+                // task completed within timeout
+                serverSelectListBox.ItemsSource = await task;
+            }
+            else
+            {
+                // timeout logic
+                //logTextBoxAdd("Timeout when discovery server!");
+                logTextBoxAdd("Timeout when discover server!");
+            }
         }
 
         private void imagePath_DoubleClicked(object sender, MouseButtonEventArgs e)
@@ -144,12 +163,12 @@ namespace RosenHCMC.VPN.Client
             {
                 try
                 {
-                    client.BaseAddress = new Uri("http://" + item.ToString() + ":9091");
-                    logTextBoxAdd($"set server to :{client.BaseAddress}");
+                    //client.BaseAddress = new Uri("http://" + item.ToString() + ":9091");
+                    ipTextbox.Text = item.ToString();
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(ex.Message);
+                    logTextBoxAdd(ex.Message);
                 }
             }
         }
@@ -179,7 +198,7 @@ namespace RosenHCMC.VPN.Client
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(ex.Message);
+                    logTextBoxAdd(ex.Message);
                 }
             }
         }
@@ -199,18 +218,32 @@ namespace RosenHCMC.VPN.Client
         {
             if (imageListBox.SelectedItem == null)
             {
-                MessageBox.Show("Please select an image");
+                logTextBoxAdd("Please select an image");
                 return;
             }
             WallpaperDTO wp = (WallpaperDTO)imageListBox.SelectedItem;
             HttpResponseMessage httpResult = client.PutAsync($"/api/wallpaper/{wp.Id}", new StringContent(string.Empty)).Result;
             if (httpResult.IsSuccessStatusCode)
             {
-                MessageBox.Show("Wallpaper Request succeeded");
+                logTextBoxAdd("Wallpaper Request succeeded");
             }
             else
             {
-                MessageBox.Show("Wallpaper Request failed");
+                logTextBoxAdd("Wallpaper Request failed");
+            }
+        }
+
+        private void setButton_Click(object sender, RoutedEventArgs e)
+        {
+            bool isIp = IPAddress.TryParse(ipTextbox.Text, out IPAddress ip);
+            if (isIp)
+            {
+                client.BaseAddress = new Uri("http://" + ipTextbox.Text + ":9091");
+                logTextBoxAdd($"set server to :{client.BaseAddress}");
+            }
+            else
+            {
+                logTextBoxAdd("The inputted text is not a valid ip");
             }
         }
     }
